@@ -76,8 +76,7 @@ for i = 1:length(fmatch)
     tmp_ofn = fieldnames(hold.Burst_Data);
     tmp_fn = replace(tmp_ofn,'%','');
     %tmp_ofn = replace(tmp_ofn,'%','''%');
-    
- % This is a temporary fix for ocean contour having a few variables which contain special characters (%) 
+
   else
     for ii = 1:length(tmp_fn)
         if (ii<12) && (ii>8)
@@ -91,10 +90,10 @@ end
 Data = tmp_d;
 Config = tmp_c;
 
-clear i ii iii tmp_d tmp_c tmp_ofn tmp_fn hold
+clear i ii iii tmp_d tmp_c tmp_ofn tmp_fn
 %% Convert to ENU coordinates
 
-[ Data2, Config2, T_beam2xyz ] = signatureAD2CP_beam2xyz_enu(Data,Config,'burst')
+[ Data2, Config2, T_beam2xyz ]=signatureAD2CP_beam2xyz_enu(Data,Config,'burst')
 
 % Save data with ENU coordinates
 savefile=[savepath '\' prefix int2str(fnumber) '.mat'];
