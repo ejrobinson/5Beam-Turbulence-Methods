@@ -19,19 +19,19 @@ clear all, close all, clc
 Nbin=20;
 
 % Introduce number of files from MIDAS software
-fn=3;
+fn=1;
 
 % Introduce single path for were data is located:
 % We need the data files previously processed to get ENU velocity:
 % The file must have the structs Data1 and Data2
 
-fpath=['/Users/Maru/Documents/PhD_UW/5BeamCodes/RawData'];
+fpath=['G:\GA_OceanContour_TEST'];
 % Introduce prefix of files
-prefix=['SS04_Sig_May2015_ENU_00000_'];
+prefix=['Out_'];
 
 % Path to save files with bin data
 
-savepath=['/Users/Maru/Documents/PhD_UW/5BeamCodes/BinDataSignature'];
+savepath=['G:\GA_OceanContour_TEST'];
 
 % Sampling frequency
 fs=8; 

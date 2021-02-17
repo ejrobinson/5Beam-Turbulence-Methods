@@ -47,7 +47,7 @@ clear all, close all, clc
 
 % Raw data files:
 
-fileregexp = 'Burst.+(.mat)'
+fileregexp = '^Burst.+(.mat)'
 
 
 fpath = 'G:\GA_OceanContour_TEST'; % Folder containing input burst files
@@ -62,7 +62,7 @@ fmatch = find(~cellfun('isempty',fmatch))
 %fnumber=2; %Number of files
 
 % Save Files info
-prefix = ['Out_Burst_']; %where to save the files
+prefix = ['Out_']; %where to save the files
 savepath = ['G:\GA_OceanContour_TEST']; %Sequential name of files
 
 
@@ -76,7 +76,7 @@ for i = 1:length(fmatch)
     tmp_ofn = fieldnames(hold.Burst_Data);
     tmp_fn = replace(tmp_ofn,'%','');
     %tmp_ofn = replace(tmp_ofn,'%','''%');
-    
+
  % This is a temporary fix for ocean contour having a few variables which contain special characters (%) 
   else
     for ii = 1:length(tmp_fn)
@@ -94,50 +94,50 @@ Config = tmp_c;
 clear i ii iii tmp_d tmp_c tmp_ofn tmp_fn hold
 %% Convert to ENU coordinates
 
-[ Data2, Config2, T_beam2xyz ] = signatureAD2CP_beam2xyz_enu(Data,Config,'burst')
-
+[ Data2, Config2, T_beam2xyz ] = signatureAD2CP_beam2xyz_enu(Data,Config,'burst',1)
+fnumber = 1;
 % Save data with ENU coordinates
 savefile=[savepath '\' prefix int2str(fnumber) '.mat'];
-save(savefile, '-mat', 'Data2');
+save(savefile, '-mat', ['Data2','Config2']);
 
 
-%% ENU Data
-figure(2), clf
-
-
-    
-    ax(1) = subplot(3,1,1); 
-    
-    pcolor(Data2.Burst_MatlabTimeStamp-datenum(2014,0,0), double(Data2.Burst_Range), double(Data2.Burst_VelX)' ), 
-    shading flat, 
-    datetick
-    set(gca,'YDir','reverse')
-    ylabel(['Vel X'])
-    caxis([-3 3])
-    colorbar,
-      ax(2) = subplot(3,1,2); 
-    
-    pcolor(Data2.Burst_MatlabTimeStamp-datenum(2014,0,0), double(Data2.Burst_Range), double(Data2.Burst_VelY)' ), 
-    shading flat, 
-    datetick
-    set(gca,'YDir','reverse')
-    ylabel(['Vel Y'])
-    caxis([-3 3])
-    colorbar,
-
-ax(3) = subplot(3,1,3);
-pcolor(Data2.Burst_MatlabTimeStamp-datenum(2014,0,0), double(Data2.Burst_Range), double(Data2.Burst_VelZ)' ), 
-    shading flat, 
-    datetick
-    set(gca,'YDir','reverse')
-    ylabel(['Vel Z'])
-    caxis([-2 2])
-    colorbar,
-
-linkaxes(ax,'x')
-
-%% Battery life
-figure(3)
-plot(Data.Burst_MatlabTimeStamp-datenum(2014,0,0),Data.Burst_Battery)
-
+% % ENU Data
+% figure(2), clf
+% 
+% 
+%     
+%     ax(1) = subplot(3,1,1); 
+%     
+%     pcolor(Data2.MatlabTimeStamp-datenum(2014,0,0), double(Data2.Range), double(Data2.VelX)' ), 
+%     shading flat, 
+%     datetick
+%     set(gca,'YDir','reverse')
+%     ylabel(['Vel X'])
+%     caxis([-1 1])
+%     colorbar,
+%       ax(2) = subplot(3,1,2); 
+%     
+%     pcolor(Data2.MatlabTimeStamp-datenum(2014,0,0), double(Data2.Range), double(Data2.VelY)' ), 
+%     shading flat, 
+%     datetick
+%     set(gca,'YDir','reverse')
+%     ylabel(['Vel Y'])
+%     caxis([-1 1])
+%     colorbar,
+% 
+% ax(3) = subplot(3,1,3);
+% pcolor(Data2.MatlabTimeStamp-datenum(2014,0,0), double(Data2.Range), double(Data2.VelZ1)' ), 
+%     shading flat, 
+%     datetick
+%     set(gca,'YDir','reverse')
+%     ylabel(['Vel Z'])
+%     caxis([-1 1])
+%     colorbar,
+% 
+% linkaxes(ax,'x')
+% 
+% % Battery life
+% figure(3)
+% plot(Data.MatlabTimeStamp-datenum(2014,0,0),Data.Battery)
+% 
 

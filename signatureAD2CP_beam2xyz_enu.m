@@ -4,6 +4,7 @@
 % Line AD2CP_ was removed
 % MGP, April 29th, 2015
 % Fixed bug for Two VelZ solution (removed -1)
+% Changed to support ocean contour format - ejrobinson Feb 2021
 
 function [ Data, Config, T_beam2xyz ] = signatureAD2CP_beam2xyz_enu( Data, Config, mode, twoZs )
 
@@ -11,18 +12,19 @@ if nargin == 3
 	twoZs = 0;
 end
 
-ad2cpstr = ''; %This string was removed from the Config struct AD2CP_
+ad2cpstr = 'Instrument'; %This string was removed from the Config struct AD2CP_
 
 if strcmpi( mode, 'avg' )
 	dataModeWord = 'Average';
 	configModeWord = 'avg';
 elseif strcmpi( mode, 'burst' )
-	dataModeWord = 'Burst';
+	dataModeWord = '';
 	configModeWord = 'burst';
 end
 
 % make the assumption the beam mapping is the same for all measurements in a data file
-activeBeams = Data.( [dataModeWord '_Physicalbeam'] )( 1, : );
+activeBeams = Data.( ['Physicalbeam'] )( :, 1 );
+activeBeams = activeBeams'
 activeBeams = activeBeams(find(activeBeams > 0));
 numberOfBeams = length( activeBeams );
 if numberOfBeams <= 2
@@ -33,10 +35,10 @@ end
 % assume max number of beams involved is 4, extra rows removed later
 beamVectorsSpherical = zeros( 4, 3 );
 
-for i = activeBeams
+for i = 1:length(activeBeams)
 	beamVectorsSpherical( i, : ) = [ 1, ...
-		Config.( [ad2cpstr 'BeamCfg' num2str( i ) '_theta' ] ), ...
-		Config.( [ad2cpstr 'BeamCfg' num2str( i ) '_phi' ] ) ];
+		Config.( [ad2cpstr '_beamConfiguration' num2str( i ) '_theta' ] ), ...
+		Config.( [ad2cpstr '_beamConfiguration' num2str( i ) '_phi' ] ) ];
 end
 
 disp(beamVectorsSpherical)
@@ -105,23 +107,23 @@ elseif numberOfBeams == 4
 end
 
 % verify we're not already in 'xyz'
-if strcmpi( Config.( [ ad2cpstr configModeWord '_coordSystem' ] ), 'xyz' )
+if strcmpi( Config.( [ ad2cpstr '_' configModeWord '_coordSystem' ] ), 'xyz' )
 	disp( 'Velocity data is already in xyz coordinate system.' )
 	return
 end
 
-xAllCells = zeros( length( Data.( [ dataModeWord '_TimeStamp' ] ) ), Config.( [ad2cpstr  configModeWord '_nCells' ] ) );
-yAllCells = zeros( length( Data.( [ dataModeWord '_TimeStamp' ] ) ), Config.( [ad2cpstr  configModeWord '_nCells' ] ) );
-zAllCells = zeros( length( Data.( [ dataModeWord '_TimeStamp' ] ) ), Config.( [ad2cpstr  configModeWord '_nCells' ] ) );
+xAllCells = zeros( length( Data.TimeStamp ), Config.( [ad2cpstr '_' configModeWord '_nCells' ] ) );
+yAllCells = zeros( length( Data.TimeStamp ), Config.( [ad2cpstr '_' configModeWord '_nCells' ] ) );
+zAllCells = zeros( length( Data.TimeStamp ), Config.( [ad2cpstr '_' configModeWord '_nCells' ] ) );
 if twoZs == 1
-	z2AllCells = zeros( length( Data.( [ dataModeWord '_TimeStamp' ] ) ), Config.( [ad2cpstr  configModeWord '_nCells' ] ) );
+	z2AllCells = zeros( length( Data.TimeStamp ), Config.( [ad2cpstr '_' configModeWord '_nCells' ] ) );
 end
 
-xyz = zeros( size( T_beam2xyz, 2 ), length( Data.( [ dataModeWord '_TimeStamp' ] ) ) );
-beam = zeros( size( T_beam2xyz, 2 ), length( Data.( [ dataModeWord '_TimeStamp' ] ) ) );
-for nCell = 1:Config.( [ad2cpstr  configModeWord '_nCells' ] )
+xyz = zeros( size( T_beam2xyz, 2 ), length( Data.TimeStamp ) );
+beam = zeros( size( T_beam2xyz, 2 ), length( Data.TimeStamp ) );
+for nCell = 1:Config.( [ad2cpstr '_' configModeWord '_nCells' ] )
 	for i = 1:numberOfBeams
-		beam( i, : ) = Data.( [ dataModeWord '_VelBeam' num2str( Data.( [ dataModeWord '_Physicalbeam' ] )( 1, i ) ) ] )( :, nCell )';
+		beam( i, : ) = Data.( [ dataModeWord 'VelBeam' num2str( Data.( [ dataModeWord 'Physicalbeam' ] )( 1, i ) ) ] )( nCell, : )';
 	end
 	xyz = T_beam2xyz * beam;
 	xAllCells( :, nCell ) = xyz( 1, : )';	
@@ -133,14 +135,14 @@ for nCell = 1:Config.( [ad2cpstr  configModeWord '_nCells' ] )
 end
 
 Config.( [ad2cpstr   configModeWord '_coordSystem' ] ) = 'xyz';
-Data.( [ dataModeWord '_VelX' ] ) = xAllCells;
-Data.( [ dataModeWord '_VelY' ] ) = yAllCells;
+Data.( [ dataModeWord 'VelX' ] ) = xAllCells;
+Data.( [ dataModeWord 'VelY' ] ) = yAllCells;
 
 if twoZs == 1
-	Data.( [ dataModeWord '_VelZ1' ] ) = zAllCells;
-	Data.( [ dataModeWord '_VelZ2' ] ) = z2AllCells;
+	Data.( [ dataModeWord 'VelZ1' ] ) = zAllCells;
+	Data.( [ dataModeWord 'VelZ2' ] ) = z2AllCells;
 else
-	Data.( [ dataModeWord '_VelZ' ] ) = zAllCells;
+	Data.( [ dataModeWord 'VelZ' ] ) = zAllCells;
 end
 
 
@@ -154,27 +156,27 @@ if strcmpi( Config.( [ad2cpstr   configModeWord '_coordSystem' ] ), 'enu' )
 end
 
 K = 3;
-EAllCells = zeros( length( Data.( [dataModeWord  '_TimeStamp' ] ) ), Config.( [ad2cpstr   configModeWord '_nCells' ] ) );
-NAllCells = zeros( length( Data.( [dataModeWord  '_TimeStamp' ] ) ), Config.( [ad2cpstr   configModeWord '_nCells' ] ) );
-UAllCells = zeros( length( Data.( [dataModeWord  '_TimeStamp' ] ) ), Config.( [ad2cpstr   configModeWord '_nCells' ] ) );
+EAllCells = zeros( length( Data.TimeStamp ), Config.( [ad2cpstr '_' configModeWord '_nCells' ] ) );
+NAllCells = zeros( length( Data.TimeStamp ), Config.( [ad2cpstr  '_' configModeWord '_nCells' ] ) );
+UAllCells = zeros( length( Data.TimeStamp ), Config.( [ad2cpstr  '_' configModeWord '_nCells' ] ) );
 if twoZs == 1
-	U2AllCells = zeros( length( Data.( [dataModeWord  '_TimeStamp' ] ) ), Config.( [ad2cpstr  configModeWord '_nCells' ] ) );
+	U2AllCells = zeros( length( Data.TimeStamp ), Config.( [ad2cpstr '_' configModeWord '_nCells' ] ) );
    K = 4;
 end
 
 Name = ['X','Y','Z'];
-ENU = zeros( K, Config.([ad2cpstr   configModeWord '_nCells' ]));
-xyz = zeros( K, Config.([ad2cpstr   configModeWord '_nCells' ]));
-for sampleIndex = 1:length(Data.( [dataModeWord  '_Error' ]));
-   if (bitand(bitshift(uint32(Data.( [dataModeWord  '_Status' ])(sampleIndex)), -25),7) == 5)
+ENU = zeros( K, Config.([ad2cpstr  '_' configModeWord '_nCells' ]));
+xyz = zeros( K, Config.([ad2cpstr  '_' configModeWord '_nCells' ]));
+for sampleIndex = 1:length(Data.( [dataModeWord  'Error' ]));
+   if (bitand(bitshift(uint32(Data.( [dataModeWord  'Status' ])(sampleIndex)), -25),7) == 5)
       signXYZ=[1 -1 -1 -1];
    else
       signXYZ=[1 1 1 1];
    end
 
-   hh = pi*(Data.([dataModeWord  '_Heading'])(sampleIndex)-90)/180;
-   pp = pi*Data.([dataModeWord  '_Pitch'])(sampleIndex)/180;
-   rr = pi*Data.([dataModeWord  '_Roll'])(sampleIndex)/180;
+   hh = pi*(Data.([dataModeWord  'Heading'])(sampleIndex)-90)/180;
+   pp = pi*Data.([dataModeWord  'Pitch'])(sampleIndex)/180;
+   rr = pi*Data.([dataModeWord  'Roll'])(sampleIndex)/180;
 
    % Make heading matrix
    H = [cos(hh) sin(hh) 0; -sin(hh) cos(hh) 0; 0 0 1];
@@ -204,7 +206,7 @@ for sampleIndex = 1:length(Data.( [dataModeWord  '_Error' ]));
       else
          axs = Name(i);
       end
-      xyz( i, : ) = signXYZ(i) * Data.( [ dataModeWord '_Vel' axs] )( sampleIndex, : )';
+      xyz( i, : ) = signXYZ(i) * Data.( [ dataModeWord 'Vel' axs] )( sampleIndex, : )';
    end
    ENU = xyz2enu * xyz;
    EAllCells( sampleIndex, : ) = ENU( 1, : )';	
@@ -215,13 +217,13 @@ for sampleIndex = 1:length(Data.( [dataModeWord  '_Error' ]));
       end
 end
 Config.( [ad2cpstr   configModeWord '_coordSystem' ] ) = 'enu';
-Data.( [ dataModeWord '_VelEast' ] ) = EAllCells;
-Data.( [ dataModeWord '_VelNorth' ] ) = NAllCells;
+Data.( [ dataModeWord 'VelEast' ] ) = EAllCells;
+Data.( [ dataModeWord 'VelNorth' ] ) = NAllCells;
 if twoZs == 1
-	Data.( [ dataModeWord '_VelUp1' ] ) = UAllCells;
-	Data.( [ dataModeWord '_VelUp2' ] ) = U2AllCells;
+	Data.( [ dataModeWord 'VelUp1' ] ) = UAllCells;
+	Data.( [ dataModeWord 'VelUp2' ] ) = U2AllCells;
 else
-	Data.( [ dataModeWord '_VelUp' ] ) = UAllCells;
+	Data.( [ dataModeWord 'VelUp' ] ) = UAllCells;
 end
 
 
