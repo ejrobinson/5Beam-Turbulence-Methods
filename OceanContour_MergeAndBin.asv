@@ -1,12 +1,10 @@
 %% OceanContour - Join exported burst files with existing ENU data and bin into sampling periods
-%% IBurst now has a seperate bin size to primary burst so this needs to be set to subsample the same in ocean contour
+%% IB
 
 fileregexp_BURST = '^(Burst_\d\d\d.VTC).+(\d.mat)'
-fileregexp_HR = '^(IBurstHR).+(\d\d\d.mat)'
-
 cb = 1; %Is the instrument continuously bursting?
 
-fpath = 'G:\GA_OceanContour_TEST'; % Folder containing input  files
+fpath = 'G:\GA_OceanContour_TEST'; % Folder containing input burst files
 fpath_c = replace(fpath,'\','\\');
 
 flist = dir(fpath);
@@ -49,58 +47,14 @@ Data_Burst = tmp_d;
 Config_Burst = tmp_c;
 Data_Burst.Range = Data_Burst.Range(1:Config_Burst.Instrument_burst_nCells);
 
-
 % Introduce number of bins:
 Nbin=Config_Burst.Instrument_burst_nCells;
 
 % Introduce number of files from MIDAS software
-fn=1; % Doesn't matter anymore as merged in matlab
+fn=1;
 
 % Sampling frequency
 fs=Config_Burst.Instrument_burst_sampleRate; 
-
-
-
-%% Now need the 5th beam values from the IBurst which ocean contour outputs seperately
-
-fmatch_ib = regexp(flist,fileregexp_HR);
-fmatch_ib = find(~cellfun('isempty',fmatch));
-for i = 1:length(fmatch)
-
-    hold_hr = load(sprintf('%s%s%s',[fpath_c,'\\',flist(fmatch(i))]));
-    if i == 1
-      tmp_d = hold_hr.IBurstHR_Data;
-      tmp_c = hold_hr.Config ;
-      tmp_ofn = fieldnames(hold_hr.IBurstHR_Data);
-      tmp_fn = replace(tmp_ofn,'%','');
-      %tmp_ofn = replace(tmp_ofn,'%','''%');
-  
-   % This is a temporary fix for ocean contour having a few variables which contain special characters (%) 
-   % EXPORTED COORD CONVESTION DATA DOES NOT HAVE THIS ISSUE
-    else
-      for ii = 1:length(tmp_fn)
-          %if (ii<12) && (ii>8)
-          %else
-              tmp_d.(tmp_fn{ii}) = [tmp_d.(tmp_fn{ii}) old_hr.IBurstHR_Data.(tmp_fn{ii})];
-          %end
-      end
-    end
-  
-  end
-  Data_HR = tmp_d;
-  Config_HR = tmp_c;
-  Data_HR.Range = Data_HR.Range(1:Config_HR.Instrument_bursthr_nCells);
-
-
-
-
-
-
-
-
-
-
-
     
 for bin=1:Nbin
     
