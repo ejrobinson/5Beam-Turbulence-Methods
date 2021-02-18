@@ -1,8 +1,8 @@
 %% OceanContour - Join exported burst files with existing ENU data and bin into sampling periods
 %% IBurst now has a seperate bin size to primary burst so this needs to be set to subsample the same in ocean contour
-
+clear all
 fileregexp_BURST = '^(Burst_\d\d\d.VTC).+(\d.mat)'
-fileregexp_HR = '^(IBurstHR).+(\d\d\d.mat)'
+fileregexp_HR = '^(IBurstHR).+(\d.mat)'
 
 cb = 1; %Is the instrument continuously bursting?
 
@@ -64,10 +64,10 @@ fs=Config_Burst.Instrument_burst_sampleRate;
 %% Now need the 5th beam values from the IBurst which ocean contour outputs seperately
 
 fmatch_ib = regexp(flist,fileregexp_HR);
-fmatch_ib = find(~cellfun('isempty',fmatch));
-for i = 1:length(fmatch)
+fmatch_ib = find(~cellfun('isempty',fmatch_ib));
+for i = 1:length(fmatch_ib)
 
-    hold_hr = load(sprintf('%s%s%s',[fpath_c,'\\',flist(fmatch(i))]));
+    hold_hr = load(sprintf('%s%s%s',[fpath_c,'\\',flist(fmatch_ib(i))]));
     if i == 1
       tmp_d = hold_hr.IBurstHR_Data;
       tmp_c = hold_hr.Config ;
@@ -81,7 +81,7 @@ for i = 1:length(fmatch)
       for ii = 1:length(tmp_fn)
           %if (ii<12) && (ii>8)
           %else
-              tmp_d.(tmp_fn{ii}) = [tmp_d.(tmp_fn{ii}) old_hr.IBurstHR_Data.(tmp_fn{ii})];
+              tmp_d.(tmp_fn{ii}) = [tmp_d.(tmp_fn{ii}) hold_hr.IBurstHR_Data.(tmp_fn{ii})];
           %end
       end
     end
@@ -92,8 +92,30 @@ for i = 1:length(fmatch)
   Data_HR.Range = Data_HR.Range(1:Config_HR.Instrument_bursthr_nCells);
 
 
+%% Cool that works - Now figure out smooshing the bins together if needed
 
+if Config_HR.Instrument_bursthr_nCells ~= Config_Burst.Instrument_burst_nCells
+    warning('HR burst and Burst have different sampling regimes, matching IBurst to Burst')
+        Data_Burst.BinEdge = Data_Burst.Range-(Data_Burst.CellSize(1)/2) ;
+        tmp.disbins = discretize(Data_HR.Range,Data_Burst.BinEdge);
 
+%% PRE ALLOCATE FOR SPEED
+Data_HR.DataMask_MBIN = NaN(length(Data_Burst.BinEdge),length(Data_HR.VelBeam5));
+Data_HR.VelB5_MBIN = NaN(length(Data_Burst.BinEdge),length(Data_HR.VelBeam5));
+Data_HR.CorB5_MBIN = NaN(length(Data_Burst.BinEdge),length(Data_HR.VelBeam5));
+Data_HR.AmpB5_MBIN = NaN(length(Data_Burst.BinEdge),length(Data_HR.VelBeam5));
+Data_HR.PGB5_MBIN = NaN(length(Data_Burst.BinEdge),length(Data_HR.VelBeam5));
+        
+    for lidx = 1:length(Data_HR.VelBeam5)
+        for jidx = 1:length(Data_Burst.BinEdge)
+            Data_HR.DataMask_MBIN(jidx,lidx) = nanmean(Data_HR.DataMask(tmp.disbins==jidx,lidx));
+            Data_HR.VelB5_MBIN(jidx,lidx) = nanmean(Data_HR.VelBeam5(tmp.disbins==jidx,lidx));
+            Data_HR.CorB5_MBIN(jidx,lidx) = nanmean(Data_HR.CorBeam5(tmp.disbins==jidx,lidx));
+            Data_HR.AmpB5_MBIN(jidx,lidx) = nanmean(Data_HR.AmpBeam5(tmp.disbins==jidx,lidx));
+            Data_HR.PGB5_MBIN(jidx,lidx) = nanmean(Data_HR.PercentGood(tmp.disbins==jidx,lidx));
+        end
+    end
+end
 
 
 
@@ -174,7 +196,7 @@ for bin=1:Nbin
             Sig(j).vbeam2(1:ens_length(i),i-ens_start+1)=Data_Burst.VelBeam2(bin,tstart(i):tend(i));
             Sig(j).vbeam3(1:ens_length(i),i-ens_start+1)=Data_Burst.VelBeam3(bin,tstart(i):tend(i));
             Sig(j).vbeam4(1:ens_length(i),i-ens_start+1)=Data_Burst.VelBeam4(bin,tstart(i):tend(i));
-            Sig(j).vbeam5(1:ens_length(i),i-ens_start+1)=Data2.IBurst_VelBeam5(bin,tstart(i):tend(i));
+            Sig(j).vbeam5(1:ens_length(i),i-ens_start+1)=Data_HR.VelBeam5(bin,tstart(i):tend(i));
             Sig(j).u_east(1:ens_length(i),i-ens_start+1)=Data_Burst.VelEast(bin,tstart(i):tend(i));
             Sig(j).v_north(1:ens_length(i),i-ens_start+1)=Data_Burst.VelNorth(bin,tstart(i):tend(i));
             Sig(j).w_up(1:ens_length(i),i-ens_start+1)=Data_Burst.VelUp(bin,tstart(i):tend(i));
