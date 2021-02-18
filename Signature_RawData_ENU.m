@@ -98,7 +98,7 @@ clear i ii iii tmp_d tmp_c tmp_ofn tmp_fn hold
 fnumber = 1;
 % Save data with ENU coordinates
 savefile=[savepath '\' prefix int2str(fnumber) '.mat'];
-save(savefile, '-mat', ['Data2','Config2']);
+save(savefile, '-mat','Data2','Config2');
 
 
 % % ENU Data
